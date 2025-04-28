@@ -67,3 +67,7 @@ python3 plot_benchmark.py
 ![alt text](time.png)
 
 ![alt text](memory.png)
+
+## Third-Party Code
+
+This project includes [uthash](https://troydhanson.github.io/uthash/), a simple hash table library for C, under the BSD 2-clause license. The license notice is preserved in `ut_hash.h`.
