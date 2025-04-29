@@ -70,21 +70,28 @@ void benchmark(const char* name,
     printf("Insert Time: %.4fs\n", insert_time);
 
     // Lookup
+    int miss = 0;
     start = clock();
     for (int i = 0; i < COUNT; ++i) {
         gen_mac(mac, i);
-        lookup_func(mac);
+        if(lookup_func(mac) == -1)
+            ++miss;
     }
     end = clock();
+    
     double lookup_time = (double)(end - start) / CLOCKS_PER_SEC;
     printf("Lookup Time: %.4fs\n", lookup_time);
     printf("\n");
-
-    aging_cleanup();
+    printf("MISS: %d\n", miss);
+    
+    double miss_rate = (double)miss / (double)COUNT;
+    printf("Miss Rate: %.4f\n", miss_rate);
+    printf("\n");
 
     // Get memory usage
     get_memory_usage_kb(&vmrss_kb, &vmpeak_kb);
-    printf("\n");
+    printf("VmRSS: %d (KB)\n", vmrss_kb);
+    printf("VmPeak: %d (KB)\n", vmpeak_kb);
 
     FILE *csv = fopen("benchmark.csv", "a");
     fprintf(csv, "%s,%.4f,%.4f,%d,%d\n", name, insert_time, lookup_time, vmpeak_kb, vmrss_kb);
