@@ -47,3 +47,50 @@ plt.legend()
 plt.grid(axis='y')
 plt.tight_layout()
 plt.show()
+
+
+# Plot Miss Rate vs LRU Cache Size (Hot/Cold Traffic)
+
+# Read the file manually
+filename = 'sweep_result.csv'  # your CSV file
+
+# Prepare data storage
+hot_ratio_to_data = {}
+
+with open(filename, 'r') as f:
+    header = f.readline()  # skip the first line
+    for line in f:
+        parts = line.strip().split(',')
+        if len(parts) != 6:
+            continue  # skip invalid lines
+
+        name, lru_size, hot_ratio, insert_time, lookup_time, miss_rate = parts
+        lru_size = int(lru_size)
+        hot_ratio = int(hot_ratio)
+        miss_rate = float(miss_rate)
+
+        if hot_ratio not in hot_ratio_to_data:
+            hot_ratio_to_data[hot_ratio] = {'lru_sizes': [], 'miss_rates': []}
+
+        hot_ratio_to_data[hot_ratio]['lru_sizes'].append(lru_size)
+        hot_ratio_to_data[hot_ratio]['miss_rates'].append(miss_rate)
+
+# Now plot
+plt.figure(figsize=(10, 6))
+
+for hot_ratio in sorted(hot_ratio_to_data.keys()):
+    lru_sizes = hot_ratio_to_data[hot_ratio]['lru_sizes']
+    miss_rates = hot_ratio_to_data[hot_ratio]['miss_rates']
+    plt.plot(lru_sizes, miss_rates, marker='o', label=f'Hot {hot_ratio}%')
+
+# Labels and title
+plt.xlabel('LRU Cache Size')
+plt.ylabel('Miss Rate')
+plt.title('Miss Rate vs LRU Cache Size (Hot/Cold Traffic)')
+plt.grid(True)
+plt.legend(title="Hot Ratio")
+plt.tight_layout()
+
+# Show the plot
+plt.savefig('miss_rate_vs_lru_size.png')
+plt.show()

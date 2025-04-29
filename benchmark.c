@@ -2,10 +2,13 @@
 #include <time.h>
 #include "list.h"
 #include "hash.h"
-#include "test.h"
+#include "lru.h"
 
 #define COUNT 100000
 #define HOT_RATIO 10  // 10% hot
+#define LOOKUP_TIMES 5
+
+extern int global_lru_max_entries;
 
 /* Helper function to output the MAC address */
 void print_mac(uint8_t mac[6]) {
@@ -107,74 +110,57 @@ void benchmark(const char* name,
 
 }
 
-/* Hot/Cold Benchmark function */
-void benchmark_hot_cold(const char* name,
-    void (*add_func)(uint8_t*, int),
-    int (*lookup_func)(uint8_t*)) {
+/* Benchmark a single hot/cold configuration */
+void benchmark_hot_cold_sweep(const char* name, int hot_ratio) {
     uint8_t mac[6];
     clock_t start, end;
-    int vmrss_kb = 0, vmpeak_kb = 0;
+    int miss = 0;
 
-    
-    const int HOT_COUNT = COUNT * HOT_RATIO / 100;
-    const int COLD_COUNT = COUNT - HOT_COUNT;
+    int hot_count = COUNT * hot_ratio / 100;
+    int cold_count = COUNT - hot_count;
 
-    printf("=== %s (Hot/Cold Traffic) ===\n", name);
+    // Reset before each benchmark
+    lru_free_all();
 
-    // Insert Phase
-    printf("Insert Phase (cold first, then hot)...\n");
+    // Insert phase
     start = clock();
-    for (int i = HOT_COUNT; i < COUNT; ++i) {
+    for (int i = hot_count; i < COUNT; ++i) {
         viper_gen_mac(mac, i);
-        add_func(mac, i % 8);
+        lru_hash_add(mac, i % 8);
     }
-    for (int i = 0; i < HOT_COUNT; ++i) {
+    for (int i = 0; i < hot_count; ++i) {
         viper_gen_mac(mac, i);
-        add_func(mac, i % 8);
+        lru_hash_add(mac, i % 8);
     }
     end = clock();
     double insert_time = (double)(end - start) / CLOCKS_PER_SEC;
-    printf("Insert Time: %.4fs\n", insert_time);
 
-    // Lookup Phase
-    printf("Lookup Phase (biased to hot MACs)...\n");
-    int miss = 0;
-    const int LOOKUP_TIMES = 5; // 5x lookups compared to inserts
+    // Lookup phase
+    srand(time(NULL));
     start = clock();
     for (int i = 0; i < LOOKUP_TIMES * COUNT; ++i) {
         int id;
         if (rand() % 100 < 80) {
-            // 80% chance: lookup hot MAC
-            id = rand() % HOT_COUNT;
+            // 80% chance hot
+            id = rand() % hot_count;
         } else {
-            // 20% chance: lookup cold MAC
-            id = HOT_COUNT + (rand() % COLD_COUNT);
+            id = hot_count + (rand() % cold_count);
         }
-
         viper_gen_mac(mac, id);
-        if (lookup_func(mac) == -1)
-        ++miss;
+        if (lru_hash_lookup(mac) == -1)
+            ++miss;
     }
     end = clock();
-
     double lookup_time = (double)(end - start) / CLOCKS_PER_SEC;
-    printf("Lookup Time: %.4fs\n", lookup_time);
-    printf("\n");
-    printf("Total Lookups: %d\n", LOOKUP_TIMES * COUNT);
-    printf("Total Misses: %d\n", miss);
 
-    double miss_rate = (double)miss / (double)(LOOKUP_TIMES * COUNT);
-    printf("Miss Rate: %.4f\n", miss_rate);
-    printf("\n");
+    double miss_rate = (double)miss / (LOOKUP_TIMES * COUNT);
 
-    // Get memory usage
-    get_memory_usage_kb(&vmrss_kb, &vmpeak_kb);
-    printf("VmRSS: %d (KB)\n", vmrss_kb);
-    printf("VmPeak: %d (KB)\n", vmpeak_kb);
-
-    FILE *csv = fopen("benchmark.csv", "a");
-    fprintf(csv, "%s (hot/cold),%.4f,%.4f,%d,%d\n", name, insert_time, lookup_time, vmpeak_kb, vmrss_kb);
+    // Output results into CSV
+    FILE *csv = fopen("sweep_result.csv", "a");
+    fprintf(csv, "%s,%d,%d,%.4f,%.4f,%.4f\n", name, global_lru_max_entries, hot_ratio, insert_time, lookup_time, miss_rate);
     fclose(csv);
+
+    printf("[Done] LRU size = %d, Hot Ratio = %d%%, Miss Rate = %.4f\n", global_lru_max_entries, hot_ratio, miss_rate);
 }
 
 int main() {
@@ -187,7 +173,31 @@ int main() {
 
     //benchmark("Linked List", list_add, list_lookup);
     //benchmark("uthash Hash Table", hash_add, hash_lookup);
-    benchmark("uthash Hash Table with LRU", lru_hash_add, lru_hash_lookup);
-    benchmark_hot_cold("uthash Hash Table with LRU", lru_hash_add, lru_hash_lookup);
+    //benchmark("uthash Hash Table with LRU", lru_hash_add, lru_hash_lookup);
+
+
+    printf("LRU Cache Hot/Cold Benchmark Sweep\n");
+    printf("-----------------------------------\n");
+
+    FILE *csv = fopen("sweep_result.csv", "w");
+    fprintf(csv, "Name,LRU_Size,Hot_Ratio,Insert_Time,Lookup_Time,Miss_Rate\n");
+    fclose(csv);
+
+    // Sweep different LRU sizes
+    int lru_sizes[] = {10000, 20000, 30000, 40000, 50000, 60000, 70000, 80000, 90000, 100000};
+    int hot_ratios[] = {5, 10, 20}; // Hot ratio sweep
+
+    int num_lru_sizes = sizeof(lru_sizes) / sizeof(lru_sizes[0]);
+    int num_hot_ratios = sizeof(hot_ratios) / sizeof(hot_ratios[0]);
+
+    for (int h = 0; h < num_hot_ratios; ++h) {
+        for (int l = 0; l < num_lru_sizes; ++l) {
+            global_lru_max_entries = lru_sizes[l];  // Dynamic LRU size (must be extern)
+            benchmark_hot_cold_sweep("LRU", hot_ratios[h]);
+        }
+    }
+
+    printf("Sweep completed! Results in sweep_result.csv\n");
+
     return 0;
 }

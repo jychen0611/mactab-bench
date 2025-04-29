@@ -69,6 +69,20 @@ python3 plot_benchmark.py
 
 ![alt text](mem_50000.png)
 
+### Miss Rate vs LRU Cache Size under Hot/Cold Traffic
+This experiment evaluates how the miss rate of a cache system changes with different LRU cache sizes under hot/cold traffic patterns.
+
+It aims to show the relationship between cache capacity, traffic locality, and lookup success rate.
+
+We test different `LRU cache sizes (10k–100k)` and `hot data ratios (5%, 10%, 20%)` to evaluate the `cache miss rate` under hot/cold traffic patterns.
+
+The goal is to see how cache size and traffic locality affect system performance.
+
+![alt text](miss_rate_vs_lru_size.png)
+
+#### Results Summary
+More hot data (20%) needs larger cache to keep miss rate low!
+
 ## Third-Party Code
 
 This project includes [uthash](https://troydhanson.github.io/uthash/), a simple hash table library for C, under the BSD 2-clause license. The license notice is preserved in `ut_hash.h`.
