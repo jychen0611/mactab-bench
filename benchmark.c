@@ -5,7 +5,6 @@
 #include "lru.h"
 
 #define COUNT 100000
-#define HOT_RATIO 10  // 10% hot
 #define LOOKUP_TIMES 5
 
 extern int global_lru_max_entries;
