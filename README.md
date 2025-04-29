@@ -62,11 +62,12 @@ pip install matplotlib
 ```
 python3 plot_benchmark.py
 ```
-### Result
 
-![alt text](time.png)
+### LRU size 50000
 
-![alt text](memory.png)
+![alt text](time_50000.png)
+
+![alt text](mem_50000.png)
 
 ## Third-Party Code
 
