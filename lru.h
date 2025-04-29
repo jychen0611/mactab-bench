@@ -1,9 +1,7 @@
 #include <stdint.h> 
-#include <time.h>
 #include "ut_hash.h"
 
-#define AGING_TIMEOUT 10
-#define LRU_MAX_ENTRIES 5
+#define LRU_MAX_ENTRIES 100000
 
 typedef struct lru_node {
     struct lru_node *prev;
@@ -13,7 +11,6 @@ typedef struct lru_node {
 typedef struct lru_mac_entry {
     uint8_t mac[6];
     int out_port;
-    time_t last_seen;
     lru_node_t lru;
     UT_hash_handle hh;
 } lru_mac_entry_t;
