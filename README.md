@@ -4,13 +4,12 @@ A simple benchmark project for evaluating different MAC address table implementa
 
 - **Linked List**: simple insertion and linear search
 - **uthash Hash Table**: fast lookup
-- **uthash + LRU + Aging**: fast lookup with memory management and automatic aging out
+- **uthash + LRU**: fast lookup with memory management
 
 ## Features
 
 - Compare insertion and lookup performance
 - Support Least Recently Used (LRU) eviction when MAC table is full
-- Support aging timeout to automatically remove inactive entries
 - Monitor memory usage (VmRSS and VmPeak)
 - Visualize benchmark results using matplotlib
 
@@ -23,10 +22,13 @@ mactab-bench/
 ├── list.c
 ├── hash.h
 ├── hash.c
+├── lru.h
+├── lru.c
 ├── ut_hash.h
 ├── Makefile
 ├── benchmark.csv (auto generated after run)
-├── plot_benchmark.py (plotting script)
+├── sweep_result.csv (auto generated after run)
+├── plot.py (plotting script)
 └── README.md 
 ```
 
@@ -49,7 +51,6 @@ It will generate a `benchmark.csv` file containing the performance results.
 ```
 Name,Insert Time,Lookup Time,VmPeak(kB),VmRSS(kB)
 Linked List,0.0031,5.4132,5724,4576
-uthash Hash Table with LRU + Aging,0.0044,0.0037,15132,13928
 ```
 
 ## Plot Results
@@ -60,7 +61,7 @@ pip install matplotlib
 ```
 ### Run
 ```
-python3 plot_benchmark.py
+python3 plot.py
 ```
 
 ### LRU size 50000
