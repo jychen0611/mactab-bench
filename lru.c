@@ -32,7 +32,17 @@ static void lru_insert(lru_mac_entry_t *entry) {
 static void lru_remove_tail() {
     if (!lru_tail) return;
 
-    // Correct way to find lru_mac_entry_t from lru_node_t
+    /*
+     * Retrieve the pointer to the enclosing lru_mac_entry_t structure from a pointer
+     * to its embedded lru_node_t member. This technique is similar to the Linux kernel's
+     * container_of() macro, which uses pointer arithmetic to calculate the base address
+     * of the outer structure given the address of an inner member and its offset.
+     *
+     * In this case:
+     *   - `lru_tail` is a pointer to the lru field within lru_mac_entry_t.
+     *   - `offsetof(lru_mac_entry_t, lru)` computes the byte offset of the 'lru' field.
+     *   - Subtracting the offset from the member pointer gives the address of the full struct.
+     */
     lru_mac_entry_t *entry = (lru_mac_entry_t *)((char *)lru_tail - offsetof(lru_mac_entry_t, lru));
 
     HASH_DEL(lru_mac_table, entry);
